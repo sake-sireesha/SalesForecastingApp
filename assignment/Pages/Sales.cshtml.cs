@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using SalesForecastingApp.Models;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Text;
 
@@ -19,20 +20,25 @@ namespace SalesForecastingApp.Pages
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
             States = new List<string>();
             BreakdownSalesData = new List<SalesData>();
+            NoDataMessage = "";
 
         }
 
         [BindProperty]
-        public int Year { get; set; }
+        [Range(2000, int.MaxValue, ErrorMessage = "please enter a year starting from 2000.")]
+        public int Year { get; set; } = 2000;
 
         [BindProperty]
         public decimal PercentageIncrease { get; set; }
 
         [BindProperty]
         public string? SelectedState { get; set; }
+        public string NoDataMessage { get; set; }
 
         public List<SalesData>? SalesData { get; set; }
         public List<string> States { get; set; }
+        
+
         public List<SalesData> BreakdownSalesData { get; set; }
         public decimal AggregatedSeedingYearSales { get; set; }
         public decimal AggregatedForecastedYearSales { get; set; }
@@ -46,6 +52,23 @@ namespace SalesForecastingApp.Pages
         {
             SalesData = GetYearlySalesWithIncrement(Year, PercentageIncrease, SelectedState);
             States = GetDistinctStates();
+            if (SalesData.Count == 0)
+            {
+                NoDataMessage = $"No data available for the year {Year}.";
+
+            }
+            else
+            {
+                NoDataMessage = "";
+            }
+        }
+        public IActionResult OnPostRefresh()
+        {
+            SalesData = null;
+            Year = 0;
+            PercentageIncrease = 0;
+            States = GetDistinctStates();
+            return Page();
         }
 
         public IActionResult OnPostExportToCsv()
@@ -76,7 +99,7 @@ namespace SalesForecastingApp.Pages
                 cmd.Parameters.AddWithValue("@Year", year);
                 cmd.Parameters.AddWithValue("@OverallIncrementPercentage", percentageIncrease);
                 cmd.Parameters.AddWithValue("@State", (object)state ?? DBNull.Value);
-                cmd.CommandTimeout = 120;
+                cmd.CommandTimeout = 300;
 
                 var stateIncrementTable = new DataTable();
                 stateIncrementTable.Columns.Add("State", typeof(string));
