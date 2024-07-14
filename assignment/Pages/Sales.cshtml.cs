@@ -21,6 +21,7 @@ namespace SalesForecastingApp.Pages
             States = new List<string>();
             BreakdownSalesData = new List<SalesData>();
             NoDataMessage = "";
+            ExportMessage = "";
 
         }
 
@@ -34,6 +35,8 @@ namespace SalesForecastingApp.Pages
         [BindProperty]
         public string? SelectedState { get; set; }
         public string NoDataMessage { get; set; }
+        public bool NoDataToExport { get; set; }
+        public string ExportMessage { get; set; }
 
         public List<SalesData>? SalesData { get; set; }
         public List<string> States { get; set; }
@@ -46,6 +49,7 @@ namespace SalesForecastingApp.Pages
         public void OnGet()
         {
             States = GetDistinctStates();
+            
         }
 
         public void OnPost()
@@ -55,34 +59,56 @@ namespace SalesForecastingApp.Pages
             if (SalesData.Count == 0)
             {
                 NoDataMessage = $"No data available for the year {Year}.";
+                
 
             }
             else
             {
                 NoDataMessage = "";
+                
             }
         }
-        public IActionResult OnPostRefresh()
-        {
-            SalesData = null;
-            Year = 0;
-            PercentageIncrease = 0;
-            States = GetDistinctStates();
-            return Page();
-        }
+        
 
         public IActionResult OnPostExportToCsv()
         {
             var salesData = GetYearlySalesWithIncrement(Year, PercentageIncrease, SelectedState);
 
-            var csv = new StringBuilder();
-            csv.AppendLine("State,Percentage Increase,Sales Value");
-            foreach (var item in salesData)
+
+            
+    if (salesData.Count == 0)
             {
-                csv.AppendLine($"{item.State},{PercentageIncrease},{item.IncreasedSales}");
+
+
+                TempData["ExportStatus"] = "NoData";
+                return RedirectToPage("./Sales");
             }
 
-            return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", "SalesForecast.csv");
+
+            var csv = new StringBuilder();
+            csv.AppendLine("State,Percentage Increase,Sales Value");
+
+            
+
+            foreach (var item in salesData)
+            {
+              
+                    csv.AppendLine($"{item.State},{PercentageIncrease},{item.IncreasedSales}");
+                
+            }
+
+            var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(csv.ToString()));
+            return File(memoryStream, "text/csv", "SalesForecast.csv");
+
+
+            //return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", "SalesForecast.csv");
+        }
+        public IActionResult OnPostRefresh()
+        {
+            Year = 2000;
+            PercentageIncrease = 0;
+            SelectedState = null;
+            return RedirectToPage("Sales");
         }
 
         private List<SalesData> GetYearlySalesWithIncrement(int year, decimal percentageIncrease, string? state)

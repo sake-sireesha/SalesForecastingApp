@@ -23,19 +23,36 @@
         <div class="form-group mx-sm-3 mb-2">
             <label for="SelectedState" class="mr-2">State:</label>
             <select class="form-control" id="SelectedState" name="SelectedState">
-                <option value=""> All States </option>
+                <option value="">-- All States --</option>
                 @foreach (var state in Model.States)
                 {
-                    <option value="@state">@state</option>
+                    
+                    if (state == Model.SelectedState)
+                    {
+                        <option value="@state" selected="selected">@state</option>
+                    }
+                    else
+                    {
+                        <option value="@state">@state</option>
+                    }
+
+
                 }
             </select>
         </div>
         <button type="submit" class="btn btn-primary mb-2">Query Sales</button>
-
+ 
 
 
         <button type="submit" formaction="/Sales?handler=ExportToCsv" class="btn btn-secondary mb-2 ml-2" @(Model.SalesData != null ? "" : "disabled")>Export to CSV</button>
-        <button type="submit" formaction="/Sales?handler=Refresh" class="btn btn-secondary mb-2 ml-2">Refresh</button>
+        <button type="submit" formaction="/Sales?handler=Refresh" class="btn btn-warning mb-2 ml-2">Refresh</button>
+
+
+
+       
+        
+
+        
 
 
         
@@ -43,10 +60,28 @@
         
 
     </form>
+    @if (TempData["ExportStatus"]?.ToString() == "NoData")
+    {
+        <div class="alert alert-warning mt-3">No data available to export.</div>
+    }
     @if (!string.IsNullOrEmpty(Model.NoDataMessage))
     {
         <p>@Model.NoDataMessage</p>
     }
+    
+
+
+
+
+    
+
+
+
+
+
+
+
+
 
     @if ( Model.SalesData != null && Model.SalesData.Count > 0)
     {
